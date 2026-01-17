@@ -3,7 +3,3 @@ A project to mitigate confirmation bias in companies sustainability through eval
 
 
 # Newline
-
-print("Hello World")
-
-print("a")
