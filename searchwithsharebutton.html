@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SUSearch - Word Search Game</title>
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #1e3c1e 0%, #2d5a2d 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+
+  h1 {
+    font-size: 56px;
+    color: #90ee90;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+  }
+
+  /* Two-column layout: grid left, clues right */
+  .game {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 980px;
+    justify-content: center;
+  }
+
+  .left-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .start-button {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    font-size: 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    font-weight: bold;
+  }
+
+  .start-button:hover { background: #45a049; transform: translateY(-2px); }
+
+  .start-button:disabled { background: #666; cursor: not-allowed; transform: none; }
+
+  .how-button {
+    background: #1976d2;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 3px 5px rgba(0,0,0,0.15);
+    transition: all 0.2s ease;
+    font-weight: bold;
+  }
+
+  .how-button:hover { background: #1565c0; transform: translateY(-1px); }
+
+  .timer {
+    font-size: 24px;
+    font-weight: bold;
+    color: #90ee90;
+    background: rgba(0,0,0,0.3);
+    padding: 8px 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .score {
+    font-size: 20px;
+    font-weight: bold;
+    color: #fff;
+    background: rgba(0,0,0,0.15);
+    padding: 8px 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  table {
+    border-collapse: collapse;
+    user-select: none;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+  }
+
+  td {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #4CAF50;
+    text-align: center;
+    font-size: 20px;
+    cursor: pointer;
+    background: white;
+    transition: background 0.2s ease;
+    font-weight: bold;
+    color: #2d5a2d;
+  }
+
+  td:hover { background: #f0f0f0; }
+  td.selected { background: #81c784; color: white; }
+  td.found { background: #4CAF50; color: white; }
+
+  .words-container {
+    background: rgba(255,255,255,0.95);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+    width: 300px;
+    min-width: 260px;
+    max-height: 520px;
+    overflow: auto;
+  }
+
+  .words-container h3 {
+    color: #2d5a2d;
+    margin-bottom: 15px;
+    font-size: 20px;
+  }
+
+  .word-list-scroll { max-height: 420px; overflow-y: auto; padding-right: 10px; }
+  .word-list-scroll::-webkit-scrollbar { width: 8px; }
+  .word-list-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+  .word-list-scroll::-webkit-scrollbar-thumb { background: #4CAF50; border-radius: 4px; }
+  .word-list-scroll::-webkit-scrollbar-thumb:hover { background: #45a049; }
+
+  #wordList { list-style: none; }
+
+  #wordList li {
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: #e8f5e9;
+    border-radius: 4px;
+    color: #2d5a2d;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    min-height: 45px;
+  }
+
+  .clue-text { flex: 1; line-height: 1.4; font-size: 14px; }
+  .word-revealed { color: #4CAF50; font-style: italic; }
+
+  .reveal-btn {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+  }
+  .reveal-btn:hover { background: #45a049; transform: scale(1.05); }
+  .reveal-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+
+  .found-word { text-decoration: line-through; background: #4CAF50 !important; color: white !important; }
+
+  /* Modal (shared) */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal-content {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    margin: 12% auto;
+    padding: 30px;
+    border-radius: 16px;
+    width: 420px;
+    text-align: center;
+    box-shadow: 0 16px 32px rgba(0,0,0,0.5);
+    animation: slideIn 0.4s ease;
+    color: white;
+  }
+  @keyframes slideIn { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .modal-content h2 { font-size: 33px; margin-bottom: 14px; }
+  .modal-content p { font-size: 20px; margin-bottom: 18px; }
+  .modal-content button { background: white; color: #4CAF50; border: none; padding: 10px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s ease; }
+  .modal-content button:hover { transform: scale(1.03); }
+
+  /* Share toast popup */
+.share-toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  z-index: 2000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.share-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-10px);
+}
+</style>
+</head>
+
+<body>
+
+<h1>SUSearch</h1>
+
+<div class="game">
+  <div class="left-panel">
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="start-button" id="startBtn">Start Game</button>
+      <button class="how-button" id="howBtn">How to Play</button>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;margin-top:6px;">
+      <div class="timer" id="timer">Time: 00:00</div>
+      <div class="score" id="score">Score: 100</div>
+    </div>
+    <table id="grid"></table>
+  </div>
+
+  <div class="words-container" id="wordsContainer" style="display:none;">
+    <h3>Clues:</h3>
+    <div class="word-list-scroll">
+      <ul id="wordList"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- Victory Modal -->
+<div id="victoryModal" class="modal">
+  <div class="modal-content">
+    <h2>🎉 Congratulations! 🎉</h2>
+    <p>The company was: <strong id="companyName"></strong></p>
+    <p id="victoryTime">You took 00:00</p>
+    <p id="victoryScore">Score: 100</p>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <button id="shareBtn">Share Results</button>
+      <button id="playAgainBtn" onclick="location.reload()">Play Again</button>
+    </div>
+  </div>
+</div>
+
+<!-- How To Play Modal -->
+<div id="howModal" class="modal">
+  <div class="modal-content">
+    <h2>How to Play</h2>
+    <p>Find the words listed in the clues. Click and drag across letters in a straight line to select a word. Use the "Reveal" buttons on clues if you need help.</p>
+    <p>Find all words to reveal the company.</p>
+    <div style="display:flex;gap:12px;justify-content:center;margin-top:10px;">
+      <button id="closeHowBtn">Got it</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= SETTINGS ================= */
+
+const size = 8;
+let score = 100;
+const companyName = "Super Ultra Corp";
+const words = ["HTML", "JAVA", "CSS", "CODE"];
+const clues = [
+  "Markup language for creating web pages",
+  "Popular programming language used for web development",
+  "Style sheet language used for describing the presentation of a document",
+  "What programmers do to create software"
+];
+const directions = [
+  [0, 1], [1, 0], [1, 1], [-1, 1]
+];
+
+let foundCount = 0;
+let revealedCount = 0;
+let gameStarted = false;
+
+/* ================= TIMER ================= */
+
+let seconds = 0;
+let timerInterval = null;
+
+const startBtn = document.getElementById("startBtn");
+const timer = document.getElementById("timer");
+const howBtn = document.getElementById("howBtn");
+const scoreEl = document.getElementById("score");
+
+function updateScoreDisplay() {
+  scoreEl.textContent = `Score: ${score}`;
+}
+
+updateScoreDisplay();
+
+startBtn.addEventListener("click", () => {
+  if (!gameStarted) {
+    gameStarted = true;
+    startBtn.disabled = true;
+    startBtn.textContent = "Game Started!";
+    // show clues and render them only after start
+    document.getElementById("wordsContainer").style.display = "block";
+    renderWordList();
+
+    // reset score on start
+    score = 100;
+    updateScoreDisplay();
+
+    timerInterval = setInterval(() => {
+      seconds++;
+      const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+      const s = String(seconds % 60).padStart(2, "0");
+      timer.textContent = `Time: ${m}:${s}`;
+    }, 1000);
+  }
+});
+
+/* ================= GRID ================= */
+
+const grid = Array(size).fill().map(() => Array(size).fill(""));
+
+function placeWord(word) {
+  let placed = false;
+  while (!placed) {
+    const [dr, dc] = directions[Math.floor(Math.random() * directions.length)];
+    const r0 = Math.floor(Math.random() * size);
+    const c0 = Math.floor(Math.random() * size);
+
+    let ok = true;
+    for (let i = 0; i < word.length; i++) {
+      const r = r0 + dr * i;
+      const c = c0 + dc * i;
+      if (r < 0 || c < 0 || r >= size || c >= size || (grid[r][c] && grid[r][c] !== word[i])) {
+        ok = false; break;
+      }
+    }
+
+    if (ok) {
+      for (let i = 0; i < word.length; i++) {
+        grid[r0 + dr * i][c0 + dc * i] = word[i];
+      }
+      placed = true;
+    }
+  }
+}
+
+words.forEach(placeWord);
+
+for (let r = 0; r < size; r++) {
+  for (let c = 0; c < size; c++) {
+    if (!grid[r][c]) grid[r][c] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+  }
+}
+
+/* ================= RENDER ================= */
+
+const table = document.getElementById("grid");
+
+grid.forEach((row, r) => {
+  const tr = document.createElement("tr");
+  row.forEach((ch, c) => {
+    const td = document.createElement("td");
+    td.textContent = ch;
+    td.dataset.row = r;
+    td.dataset.col = c;
+    td.draggable = false;
+    tr.appendChild(td);
+  });
+  table.appendChild(tr);
+});
+
+/* Render word/clue list only when requested */
+function renderWordList() {
+  const wordList = document.getElementById("wordList");
+  wordList.innerHTML = "";
+  words.forEach((w, index) => {
+    const li = document.createElement("li");
+    const clueSpan = document.createElement("span");
+    clueSpan.className = "clue-text";
+    clueSpan.textContent = clues[index];
+    clueSpan.dataset.word = w;
+
+    const revealBtn = document.createElement("button");
+    revealBtn.className = "reveal-btn";
+    revealBtn.textContent = "Reveal";
+    revealBtn.onclick = () => revealWord(w, clueSpan, revealBtn);
+
+    li.appendChild(clueSpan);
+    li.appendChild(revealBtn);
+    li.id = w;
+    wordList.appendChild(li);
+  });
+}
+
+/* ================= SELECTION (STABLE) ================= */
+
+let startCell = null;
+let direction = null;
+let selected = [];
+let isDragging = false;
+
+document.addEventListener("dragstart", e => e.preventDefault());
+
+table.addEventListener("mousedown", e => {
+  if (e.target.tagName !== "TD" || !gameStarted) return;
+  e.preventDefault();
+  clearSelection();
+  startCell = e.target;
+  selected = [startCell];
+  startCell.classList.add("selected");
+  isDragging = true;
+});
+
+document.addEventListener("mousemove", e => {
+  if (!isDragging) return;
+  e.preventDefault();
+  const cell = document.elementFromPoint(e.clientX, e.clientY);
+  if (!cell || cell.tagName !== "TD") return;
+
+  const r0 = +startCell.dataset.row;
+  const c0 = +startCell.dataset.col;
+  const r1 = +cell.dataset.row;
+  const c1 = +cell.dataset.col;
+
+  const dRow = r1 - r0;
+  const dCol = c1 - c0;
+  const absRow = Math.abs(dRow);
+  const absCol = Math.abs(dCol);
+
+  if (!direction) {
+    if (absRow + absCol < 2) return;
+    if (Math.abs(absRow - absCol) <= 1) direction = [Math.sign(dRow), Math.sign(dCol)];
+    else if (absCol > absRow) direction = [0, Math.sign(dCol)];
+    else direction = [Math.sign(dRow), 0];
+  }
+
+  clearSelection();
+  const [dr, dc] = direction;
+  let steps;
+  if (dr !== 0 && dc !== 0) steps = Math.min(absRow, absCol);
+  else steps = Math.max(absRow, absCol);
+
+  for (let i = 0; i <= steps; i++) {
+    const r = r0 + dr * i;
+    const c = c0 + dc * i;
+    if (r < 0 || c < 0 || r >= size || c >= size) break;
+    const td = document.querySelector(`td[data-row='${r}'][data-col='${c}']`);
+    td.classList.add("selected");
+    selected.push(td);
+  }
+});
+
+document.addEventListener("mouseup", () => {
+  if (isDragging) {
+    checkWord();
+    isDragging = false;
+    direction = null;
+  }
+});
+
+/* ================= WORD CHECK ================= */
+
+function revealWord(word, clueSpan, button) {
+  if (!gameStarted) return;
+  clueSpan.innerHTML = `${clues[words.indexOf(word)]} → <span class="word-revealed">${word}</span>`;
+  button.disabled = true;
+  revealedCount++;
+
+  // subtract 25 per reveal, floor at 0
+  score = Math.max(0, score - 25);
+  updateScoreDisplay();
+}
+
+function clearSelection() {
+  selected.forEach(c => c.classList.remove("selected"));
+  selected = [];
+}
+
+function checkWord() {
+  const word = selected.map(c => c.textContent).join("");
+  const rev = word.split("").reverse().join("");
+
+  if (words.includes(word) || words.includes(rev)) {
+    selected.forEach(c => c.classList.add("found"));
+    const el = document.getElementById(word) || document.getElementById(rev);
+    if (el && !el.classList.contains("found-word")) {
+      el.classList.add("found-word");
+      foundCount++;
+      if (foundCount === words.length) {
+        clearInterval(timerInterval);
+        showVictoryModal();
+      }
+    }
+  } else {
+    clearSelection();
+  }
+}
+function showToast(message) {
+  let toast = document.querySelector(".share-toast");
+
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.className = "share-toast";
+    document.body.appendChild(toast);
+  }
+
+  toast.textContent = message;
+  toast.classList.add("show");
+
+  clearTimeout(toast.hideTimer);
+  toast.hideTimer = setTimeout(() => {
+    toast.classList.remove("show");
+  }, 2500);
+}
+/* ================= MODALS ================= */
+
+function showVictoryModal() {
+  const modal = document.getElementById("victoryModal");
+  const victoryTime = document.getElementById("victoryTime");
+  const companyEl = document.getElementById("companyName");
+  const victoryScoreEl = document.getElementById("victoryScore");
+  const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+  const s = String(seconds % 60).padStart(2, "0");
+  victoryTime.textContent = `You took ${m}:${s}`;
+  companyEl.textContent = companyName;
+  victoryScoreEl.textContent = `Score: ${score}`;
+  modal.style.display = "block";
+}
+
+howBtn.addEventListener("click", () => {
+  document.getElementById("howModal").style.display = "block";
+});
+
+document.getElementById("closeHowBtn").addEventListener("click", () => {
+  document.getElementById("howModal").style.display = "none";
+});
+
+/* Close modals when clicking outside content */
+window.addEventListener("click", (e) => {
+  const v = document.getElementById("victoryModal");
+  const h = document.getElementById("howModal");
+  if (e.target === v) v.style.display = "none";
+  if (e.target === h) h.style.display = "none";
+});
+
+document.getElementById("shareBtn").addEventListener("click", shareResults);
+
+function shareResults() {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = 600;
+  canvas.height = 350;
+
+  /* Background */
+  ctx.fillStyle = "#1e3c1e";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  /* Card */
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(40, 40, 520, 270);
+
+  /* Title */
+  ctx.fillStyle = "#2d5a2d";
+  ctx.font = "bold 36px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("SUSearch Results", canvas.width / 2, 95);
+
+  /* Time + Score */
+  ctx.font = "22px Arial";
+  ctx.fillText(`Time: ${timer.textContent.replace("Time: ", "")}`, canvas.width / 2, 150);
+  ctx.fillText(`Score: ${score}`, canvas.width / 2, 190);
+
+  /* Footer */
+  ctx.font = "16px Arial";
+  ctx.fillStyle = "#555";
+  ctx.fillText("Can you beat my score?", canvas.width / 2, 240);
+
+  canvas.toBlob(async (blob) => {
+  try {
+    await navigator.clipboard.write([
+      new ClipboardItem({ "image/png": blob })
+    ]);
+
+    showToast("Results image copied! Paste it anywhere 📋");
+
+  } catch (err) {
+    showToast("Sharing not supported on this browser");
+    console.error(err);
+  }
+});
+}
+
+</script>
+
+</body>
+</html>
