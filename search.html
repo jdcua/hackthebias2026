@@ -159,6 +159,42 @@
     color: #2d5a2d;
     font-weight: bold;
     transition: all 0.3s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .clue-text { /* Clue text styling */
+    flex: 1;
+  }
+
+  .word-revealed { /* Revealed word styling */
+    color: #4CAF50;
+    font-style: italic;
+  }
+
+  .reveal-btn { /* Reveal button styling */
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+  }
+
+  .reveal-btn:hover { /* Reveal button hover */
+    background: #45a049;
+    transform: scale(1.05);
+  }
+
+  .reveal-btn:disabled { /* Disabled reveal button */
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
   }
 
   .found-word { /* Strikes through a found word */
@@ -249,7 +285,7 @@
   </div>
 
   <div class="words-container"> <!-- The words to find, displayed on the right -->
-    <h3>Clues</h3>
+    <h3>Find these words:</h3>
     <div class="word-list-scroll"> <!-- Scrollable word list -->
       <ul id="wordList"></ul>
     </div>
@@ -260,7 +296,6 @@
 <div id="victoryModal" class="modal"> <!-- Modal overlay -->
   <div class="modal-content"> <!-- Modal content -->
     <h2>🎉 Congratulations! 🎉</h2>
-    <p> The company was: <strong id="companyName"></strong></p>    
     <p id="victoryTime">Time: 00:00</p> <!-- Victory time display -->
     <button onclick="location.reload()">Play Again</button> <!-- Reload button -->
   </div>
@@ -270,8 +305,14 @@
 /* ================= SETTINGS ================= */
 
 const size = 8;
-const words = ["HTML", "JAVA"]; // set your words here
-const companyName = "ACME Corp"; // set your company name here
+const words = ["HTML", "JAVA", "CSS", "CODE", "WEB"];
+const clues = [
+  "Markup language for creating web pages",
+  "Popular programming language for web development",
+  "Style sheet language used for describing the presentation of a document",
+  "What programmers do to create software",
+  "The collection of web pages and resources"
+];
 const directions = [
   [0, 1], // Horizontal
   [1, 0], // Vertical
@@ -280,6 +321,7 @@ const directions = [
 ];
 
 let foundCount = 0; // How many words have been found
+let revealedCount = 0; // How many words have been revealed via clue buttons
 let gameStarted = false; // Track if game has started
 
 /* ================= TIMER ================= */
@@ -372,11 +414,23 @@ grid.forEach((row, r) => { // Run through each row
 });
 
 const wordList = document.getElementById("wordList"); // Get list
-words.forEach(w => {
+words.forEach((w, index) => {
   const li = document.createElement("li"); // Create list item
-  li.textContent = w; // Set text
-  li.id = w; // Set TD
-  wordList.appendChild(li); //Add to list item
+  
+  const clueSpan = document.createElement("span"); // Create clue text
+  clueSpan.className = "clue-text"; // Add class
+  clueSpan.textContent = clues[index]; // Set clue text
+  clueSpan.dataset.word = w; // Store word for reveal
+  
+  const revealBtn = document.createElement("button"); // Create reveal button
+  revealBtn.className = "reveal-btn"; // Add class
+  revealBtn.textContent = "Reveal"; // Button text
+  revealBtn.onclick = () => revealWord(w, clueSpan, revealBtn); // Add click handler
+  
+  li.appendChild(clueSpan); // Add clue to list item
+  li.appendChild(revealBtn); // Add button to list item
+  li.id = w; // Set ID
+  wordList.appendChild(li); // Add to list
 });
 
 /* ================= SELECTION (STABLE) ================= */
@@ -466,6 +520,14 @@ document.addEventListener("mouseup", () => { // Mouse released, check word and s
 
 /* ================= WORD CHECK ================= */
 
+function revealWord(word, clueSpan, button) { // Reveal word from clue
+  if (!gameStarted) return; // Only allow if game started
+  
+  clueSpan.innerHTML = `${clues[words.indexOf(word)]} → <span class="word-revealed">${word}</span>`; // Show word
+  button.disabled = true; // Disable button
+  revealedCount++; // Increment revealed count
+}
+
 function clearSelection() { // Clear selected letters
   selected.forEach(c => c.classList.remove("selected"));
   selected = [];
@@ -494,16 +556,12 @@ function checkWord() { // Check if a word was found
 }
 
 function showVictoryModal() { // Display victory modal
-  const modal = document.getElementById("victoryModal");
-  const victoryTime = document.getElementById("victoryTime");
-  const companyEl = document.getElementById("companyName");
-
-  const m = String(Math.floor(seconds / 60)).padStart(2, "0");
-  const s = String(seconds % 60).padStart(2, "0");
-  victoryTime.textContent = `Time: ${m}:${s}`;
-  companyEl.textContent = companyName;
-
-  modal.style.display = "block";
+  const modal = document.getElementById("victoryModal"); // Get modal element
+  const victoryTime = document.getElementById("victoryTime"); // Get time display
+  const m = String(Math.floor(seconds / 60)).padStart(2, "0"); // Format minutes
+  const s = String(seconds % 60).padStart(2, "0"); // Format seconds
+  victoryTime.textContent = `Time: ${m}:${s}`; // Set time text
+  modal.style.display = "block"; // Show modal
 }
 </script> <!-- End JavaScript -->
 
