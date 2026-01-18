@@ -3,6 +3,12 @@ import io
 import re
 from pypdf import PdfReader
 
+# PDF Scraper Utility Class
+# Handles downloading, reading, and simple text analysis of PDF documents
+import io
+import re
+from pypdf import PdfReader
+
 class PDFScraper:
     def __init__(self):
         self.pdfs_processed = 0
@@ -28,6 +34,7 @@ class PDFScraper:
             print(f"✅ Successfully extracted text from PDF ({self.pdfs_processed} processed)")
             return text
         except Exception as e:
+            # Catch network or parsing errors to prevent crash
             print(f"❌ Error processing {url}: {e}")
             return ""
 
@@ -52,11 +59,14 @@ class PDFScraper:
 
     def clean_text(self, text):
         """Removes extra whitespace and normalizes text."""
+        # Replace multiple spaces/newlines with single space
         return re.sub(r'\s+', ' ', text).strip()
 
     def split_into_sentences(self, text):
         """Splits text into sentences (filters out very short ones)."""
+        # Split by punctuation followed by space (lookbehind assertion)
         sentences = re.split(r'(?<=[.!?])\s+', text)
+        # Filter noise (sentences shorter than 30 chars are usually not useful content)
         return [s.strip() for s in sentences if len(s) > 30]
 
     def search_keywords(self, text, keywords):
@@ -68,14 +78,16 @@ class PDFScraper:
         sentences = self.split_into_sentences(text)
         
         results = {
-            'found_keywords': [],
-            'relevant_sentences': []
+            'found_keywords': [],      # List of keywords actually found
+            'relevant_sentences': []   # Sentences containing any of the keywords
         }
         
+        # Check existence of each keyword
         for keyword in keywords:
             if keyword.lower() in text_lower:
                 results['found_keywords'].append(keyword)
         
+        # Extract context sentences
         for sentence in sentences:
             if any(kw.lower() in sentence.lower() for kw in keywords):
                 results['relevant_sentences'].append(sentence)
@@ -107,9 +119,9 @@ class PDFScraper:
                 
                 if match:
                     metrics_found.append({
-                        'value': match.group(1),
-                        'metric': metric,
-                        'sentence': sentence
+                        'value': match.group(1), # The number part
+                        'metric': metric,        # The unit
+                        'sentence': sentence     # Context
                     })
         
         return metrics_found

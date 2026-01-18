@@ -5,26 +5,34 @@ import requests
 import io
 import json
 import random
+import threading
+from queue import Queue
+import time
 from pypdf import PdfReader
-from GRI_STANDARDS_DATABASE import GRI_STANDARDS, BIAS_FLUFF_WORDS
+from GRI_STANDARDS_DATABASE import GRI_STANDARDS, BIAS_FLUFF_WORD
 
 
-ANTHROPIC_API_KEY = "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"
+ANTHROPIC_API_KEY = "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"
 
 # Initialize Flask and Claude
 app = Flask(__name__, static_folder='static')
 client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
-# PDF List
+# PDF List - Sources for sustainability reports
+# These URLs are used to fetch real-world data for the game
 PDF_URLS = [
     "https://www.deloitte.com/content/dam/assets-shared/docs/about/gir/global-report-full-version.pdf",
-    "https://www.pwc.com/gx/en/about/assets/2025-pwc-network-sustainability-report.pdf",
     "https://www.ey.com/content/dam/ey-unified-site/ey-com/en-ca/about-us/documents/ey-ca-impact-report-en-2025-v1.pdf",
-    "https://www.nestle.com/sites/default/files/2024-02/creating-shared-value-sustainability-report-2023-en.pdf",
     "https://www.sheingroup.com/wp-content/uploads/2024/08/FINAL-SHEIN-2023-Sustainability-and-Social-Impact-Report.pdf.pdf"
+    
 ]
 
-GAME_STATE_FILE = 'game_state.json'
+GAME_STATE_FILE = 'game_state.json'  # file to persist used PDFs state
+
+# Preloading system to avoid wait times for the user
+preloaded_games = Queue(maxsize=2)  # Store up to 2 preloaded games logic
+preload_lock = threading.Lock()     # Thread safety for queue access
+is_preloading = False               # Flag to prevent multiple preloader threads
 
 class PDFScraper:
     def __init__(self):
@@ -34,6 +42,7 @@ class PDFScraper:
         """Downloads a PDF from a URL and extracts its text"""
         print(f"📄 Downloading PDF from {url}...")
         try:
+            # unique user agent to avoid being blocked by some servers
             response = requests.get(url, timeout=60)
             response.raise_for_status()
             
@@ -41,6 +50,7 @@ class PDFScraper:
             reader = PdfReader(f)
             
             text = ""
+            # Limit to first 50 pages to prevent processing overload on huge reports
             max_pages = min(50, len(reader.pages))
             for i, page in enumerate(reader.pages[:max_pages]): 
                 extracted = page.extract_text()
@@ -117,6 +127,7 @@ class PDFScraper:
                     })
         
         if bias_findings:
+            # Limit to top 5 bias findings to avoid overwhelming the analysis
             for finding in bias_findings[:5]:
                 analysis['misleading_content'].append({
                     'code': 'BIAS',
@@ -149,18 +160,18 @@ def get_next_pdf():
     """Get next random unused PDF"""
     state = load_game_state()
     
-    # If all PDFs used, reset
+    # If all PDFs used, reset to allow replaying
     if len(state['used_pdfs']) >= len(PDF_URLS):
         print("\n🔄 All PDFs used! Resetting...")
         state['used_pdfs'] = []
     
-    # Get unused PDFs
+    # Get unused PDFs list
     unused = [pdf for pdf in PDF_URLS if pdf not in state['used_pdfs']]
     
-    # Pick random
+    # Pick random PDF from unused list
     selected = random.choice(unused)
     
-    # Mark as used
+    # Mark as used and save state
     state['used_pdfs'].append(selected)
     save_game_state(state)
     
@@ -267,74 +278,119 @@ No explanations, no numbering, just word then clue, alternating."""
     response_text = message.content[0].text
     lines = [line.strip() for line in response_text.split('\n') if line.strip()]
     
-    # Separate words and clues (alternating lines)
+    # Separate words and clues (alternating lines from LLM response)
     words = []
     clues = []
     for i, line in enumerate(lines):
         if i % 2 == 0:
-            words.append(line.upper())
+            words.append(line.upper()) # Ensure words are uppercase for the grid
         else:
             clues.append(line)
     
+    # Return limited count
     return words[:count], clues[:count]
 
 @app.route('/')
 def index():
     """Serve the game HTML"""
     return send_from_directory('.', 'game.html')
+
+
+def generate_game_data():
+    """Generate game data from next random PDF (used by preloader and on-demand)"""
+    print("\n" + "="*60)
+    print("🎮 Generating Game Data...")
+    print("="*60)
     
+    # Get next PDF
+    pdf_url = get_next_pdf()
+    print(f"\n📌 Selected PDF: {pdf_url}")
+    
+    # Process PDF
+    scraper = PDFScraper()
+    pdf_content = scraper.download_pdf_text(pdf_url)
+    
+    if not pdf_content:
+        return None
+    
+    # Clean text
+    cleaned_content = scraper.clean_text(pdf_content)
+    
+    # Analyze GRI compliance
+    gri_analysis = scraper.analyze_gri_compliance(cleaned_content)
+    
+    # Extract company name
+    print(f"\n🔍 Identifying company from PDF...")
+    company_name = extract_company_name(cleaned_content)
+    print(f"✅ Found company: {company_name}")
+    
+    # Generate words and clues
+    print(f"\n🤖 Generating word search...")
+    words, clues = generate_words_from_pdf(cleaned_content, company_name, gri_analysis, count=5)
+    
+    print(f"\n📝 Generated words: {words}")
+    print(f"💡 Generated clues: {clues}")
+    print(f"\n✅ Game data ready!\n")
+    
+    return {
+        'words': words,
+        'clues': clues,
+        'companyName': company_name
+    }
+
+
+def preload_game_worker():
+    """Background worker that keeps games preloaded"""
+    global is_preloading
+    while True:
+        # Check if we need more games in the buffer
+        if preloaded_games.qsize() < 2 and not is_preloading:
+            with preload_lock:
+                is_preloading = True
+            try:
+                print("🔄 Background: Preloading next game...")
+                game_data = generate_game_data()
+                if game_data:
+                    preloaded_games.put(game_data)
+                    print(f"✅ Background: Game preloaded (queue size: {preloaded_games.qsize()})")
+            except Exception as e:
+                print(f"⚠️ Background preload error: {e}")
+            finally:
+                with preload_lock:
+                    is_preloading = False
+        time.sleep(2)  # Check every 2 seconds for queue status
+
 
 @app.route('/new-game')
 def new_game():
-    """Generate a new game from next random PDF"""
+    """Get a preloaded game or generate on-demand"""
     try:
-        print("\n" + "="*60)
-        print("🎮 Generating New Game...")
-        print("="*60)
+        # Try to get a preloaded game first (instant!)
+        if not preloaded_games.empty():
+            print("⚡ Serving preloaded game!")
+            return jsonify(preloaded_games.get())
         
-        # Get next PDF
-        pdf_url = get_next_pdf()
-        print(f"\n📌 Selected PDF: {pdf_url}")
-        
-        # Process PDF
-        scraper = PDFScraper()
-        pdf_content = scraper.download_pdf_text(pdf_url)
-        
-        if not pdf_content:
-            return jsonify({'error': 'Failed to extract PDF content'}), 500
-        
-        # Clean text
-        cleaned_content = scraper.clean_text(pdf_content)
-        
-        # Analyze GRI compliance
-        gri_analysis = scraper.analyze_gri_compliance(cleaned_content)
-        
-        # Extract company name
-        print(f"\n🔍 Identifying company from PDF...")
-        company_name = extract_company_name(cleaned_content)
-        print(f"✅ Found company: {company_name}")
-        
-        # Generate words and clues
-        print(f"\n🤖 Generating word search...")
-        words, clues = generate_words_from_pdf(cleaned_content, company_name, gri_analysis, count=5)
-        
-        print(f"\n📝 Generated words: {words}")
-        print(f"💡 Generated clues: {clues}")
-        print(f"\n✅ Game ready!\n")
-        
-        return jsonify({
-            'words': words,
-            'clues': clues,
-            'companyName': company_name
-        })
+        # Fallback: generate on-demand if queue is empty
+        print("⏳ No preloaded game available, generating on-demand...")
+        game_data = generate_game_data()
+        if game_data:
+            return jsonify(game_data)
+        return jsonify({'error': 'Failed to generate game'}), 500
         
     except Exception as e:
-        print(f"❌ Error generating game: {e}")
+        print(f"❌ Error getting game: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     print("\n🚀 Starting SUSearch Server...")
     print("📍 Open your browser to: http://localhost:5000")
     print("🎮 Game will auto-generate on page load")
     print("="*60 + "\n")
+    
+    # Start background preloader
+    preload_thread = threading.Thread(target=preload_game_worker, daemon=True)
+    preload_thread.start()
+    print("🔄 Background preloader started")
+    
     app.run(debug=True, port=5000)

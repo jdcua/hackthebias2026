@@ -245,6 +245,8 @@ CRITICAL RULES:
 - The clues should be fun, engaging, simple, and educational
 - The clues should be fill-in-the-blank style as well. Example: "A metric this report fails to disclose: _____ consumption"
 - You can reference missing metrics (e.g., "A metric this report fails to disclose")
+- The clues should be fun, engaging, simple, and educational
+- The clues should be fill-in-the-blank style as well. Example: "A metric this report fails to disclose: _____ consumption"
 - You can highlight misleading language (e.g., "Vague term used without supporting data")
 - You can reference bias words (e.g., "Subjective claim without evidence")
 - Focus on metrics, initiatives, practices, or general concepts from the PDF

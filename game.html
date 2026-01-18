@@ -179,6 +179,7 @@
 
         /* functionality for the clues panel basically */
         .word-list-scroll {
+            /* Scrollable area for when there are many words */
             max-height: 420px;
             overflow-y: auto;
             padding-right: 10px;
@@ -206,6 +207,7 @@
         /* Remove default bullet points from the word list */
         #wordList {
             list-style: none;
+            /* Clean list look */
         }
 
         /* styling the list items themselves (each clue) */
@@ -485,8 +487,12 @@
         let score = 100;
 
         // Directions words can be placed: horizontal, vertical, diagonal down-right, diagonal up-right
+        // Format: [row_change, col_change]
         const directions = [
-            [0, 1], [1, 0], [1, 1], [-1, 1]
+            [0, 1],   // Horizontal Right
+            [1, 0],   // Vertical Down
+            [1, 1],   // Diagonal Down-Right
+            [-1, 1]   // Diagonal Up-Right
         ];
 
         // Game data loaded from server
@@ -558,9 +564,10 @@
             // Place all words in the grid
             words.forEach(placeWord);
 
-            // Fill remaining empty cells with random letters
+            // Fill remaining empty cells with random letters A-Z
             for (let r = 0; r < size; r++) {
                 for (let c = 0; c < size; c++) {
+                    // Generate random char code between 65 (A) and 90 (Z)
                     if (!grid[r][c]) grid[r][c] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
                 }
             }
@@ -589,7 +596,7 @@
                 for (let i = 0; i < word.length; i++) {
                     const r = r0 + dr * i;
                     const c = c0 + dc * i;
-                    // Check bounds and conflicts with existing letters
+                    // Check bounds (must be inside grid) and conflicts with existing letters
                     if (r < 0 || c < 0 || r >= size || c >= size || (grid[r][c] && grid[r][c] !== word[i])) {
                         ok = false;
                         break;
@@ -666,6 +673,7 @@
         // Starts the game when the start button is clicked
         startBtn.addEventListener("click", () => {
             if (!gameStarted) {
+                // Lock the button so it can't be clicked again
                 gameStarted = true;
                 startBtn.disabled = true;
                 startBtn.textContent = "Game Started!";
@@ -701,8 +709,11 @@
 
         // Handle mousedown on grid cells (start of drag)
         document.getElementById("grid").addEventListener("mousedown", e => {
+            // Only handle left clicks on table data cells when game is active
             if (e.target.tagName !== "TD" || !gameStarted) return;
             e.preventDefault();
+
+            // Start new selection
             clearSelection();
             startCell = e.target;
             selected = [startCell];
@@ -787,8 +798,9 @@
 
         // Checks if the selected cells form a valid word
         function checkWord() {
+            // Combine selected cells into a string
             const word = selected.map(c => c.textContent).join("");
-            const rev = word.split("").reverse().join(""); // Check reverse too
+            const rev = word.split("").reverse().join(""); // Check reverse too because user might select backwards
 
             // Check if word or its reverse is in the word list
             if (words.includes(word) || words.includes(rev)) {
@@ -886,25 +898,25 @@
             const canvas = document.createElement("canvas");
             const ctx = canvas.getContext("2d");
 
-            // Set canvas size
+            // Set canvas size (suitable for social sharing)
             canvas.width = 600;
             canvas.height = 350;
 
-            // Draw background
+            // Draw dark green background
             ctx.fillStyle = "#1e3c1e";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw white card
+            // Draw white card in the center
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(40, 40, 520, 270);
 
-            // Draw title
+            // Draw title centered at the top
             ctx.fillStyle = "#2d5a2d";
             ctx.font = "bold 36px Arial";
             ctx.textAlign = "center";
             ctx.fillText("SUSearch Results", canvas.width / 2, 95);
 
-            // Draw time and score
+            // Draw time and score details
             ctx.font = "22px Arial";
             ctx.fillText(`Time: ${timer.textContent.replace("Time: ", "")}`, canvas.width / 2, 150);
             ctx.fillText(`Score: ${score}`, canvas.width / 2, 190);
