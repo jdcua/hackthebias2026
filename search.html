@@ -114,7 +114,7 @@
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-    width: 200px;
+    width: 400px;
   }
 
   .words-container h3 { /* Word list heading */
@@ -152,8 +152,8 @@
   }
 
   #wordList li { /* Individual word items */
-    padding: 8px 12px;
-    margin-bottom: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
     background: #e8f5e9;
     border-radius: 4px;
     color: #2d5a2d;
@@ -163,10 +163,13 @@
     justify-content: space-between;
     align-items: center;
     gap: 10px;
+    min-height: 45px;
   }
 
   .clue-text { /* Clue text styling */
     flex: 1;
+    line-height: 1.4;
+    font-size: 14px;
   }
 
   .word-revealed { /* Revealed word styling */
@@ -308,10 +311,10 @@ const size = 8;
 const words = ["HTML", "JAVA", "CSS", "CODE", "WEB"];
 const clues = [
   "Markup language for creating web pages",
-  "Popular programming language for web development",
+  "Popular programming language used for web development",
   "Style sheet language used for describing the presentation of a document",
   "What programmers do to create software",
-  "The collection of web pages and resources"
+  "A system of interconnected documents and resources"
 ];
 const directions = [
   [0, 1], // Horizontal
