@@ -152,5 +152,3 @@ if __name__ == "__main__":
         for m in metrics[:3]:  # Show first 3
             print(f"  - {m['value']} in: {m['sentence'][:100]}...")
     
-    # Example 2: Read local PDF file
-    # text = scraper.read_local_pdf("path/to/your/file.pdf")

@@ -9,10 +9,10 @@ import threading
 from queue import Queue
 import time
 from pypdf import PdfReader
-from GRI_STANDARDS_DATABASE import GRI_STANDARDS, BIAS_FLUFF_WORD
+from GRI_STANDARDS_DATABASE import GRI_STANDARDS, BIAS_FLUFF_WORDS
 
 
-ANTHROPIC_API_KEY = "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"
+ANTHROPIC_API_KEY = "test"
 
 # Initialize Flask and Claude
 app = Flask(__name__, static_folder='static')
