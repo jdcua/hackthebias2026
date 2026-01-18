@@ -25,14 +25,14 @@
     letter-spacing: 2px;
   }
 
-  /* Stack game vertically and center contents */
+  /* Two-column layout: grid left, clues right */
   .game {
     display: flex;
-    flex-direction: column;
     gap: 30px;
-    align-items: center;
+    align-items: flex-start;
     width: 100%;
     max-width: 980px;
+    justify-content: center;
   }
 
   .left-panel {
@@ -115,8 +115,10 @@
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-    width: 100%;
-    max-width: 600px;
+    width: 300px;
+    min-width: 260px;
+    max-height: 520px;
+    overflow: auto;
   }
 
   .words-container h3 {
@@ -125,7 +127,7 @@
     font-size: 20px;
   }
 
-  .word-list-scroll { max-height: 300px; overflow-y: auto; padding-right: 10px; }
+  .word-list-scroll { max-height: 420px; overflow-y: auto; padding-right: 10px; }
   .word-list-scroll::-webkit-scrollbar { width: 8px; }
   .word-list-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
   .word-list-scroll::-webkit-scrollbar-thumb { background: #4CAF50; border-radius: 4px; }
@@ -213,7 +215,7 @@
     <table id="grid"></table>
   </div>
 
-  <div class="words-container">
+  <div class="words-container" id="wordsContainer" style="display:none;">
     <h3>Clues:</h3>
     <div class="word-list-scroll">
       <ul id="wordList"></ul>
@@ -279,6 +281,10 @@ startBtn.addEventListener("click", () => {
     gameStarted = true;
     startBtn.disabled = true;
     startBtn.textContent = "Game Started!";
+    // show clues and render them only after start
+    document.getElementById("wordsContainer").style.display = "block";
+    renderWordList();
+
     timerInterval = setInterval(() => {
       seconds++;
       const m = String(Math.floor(seconds / 60)).padStart(2, "0");
@@ -342,24 +348,28 @@ grid.forEach((row, r) => {
   table.appendChild(tr);
 });
 
-const wordList = document.getElementById("wordList");
-words.forEach((w, index) => {
-  const li = document.createElement("li");
-  const clueSpan = document.createElement("span");
-  clueSpan.className = "clue-text";
-  clueSpan.textContent = clues[index];
-  clueSpan.dataset.word = w;
+/* Render word/clue list only when requested */
+function renderWordList() {
+  const wordList = document.getElementById("wordList");
+  wordList.innerHTML = "";
+  words.forEach((w, index) => {
+    const li = document.createElement("li");
+    const clueSpan = document.createElement("span");
+    clueSpan.className = "clue-text";
+    clueSpan.textContent = clues[index];
+    clueSpan.dataset.word = w;
 
-  const revealBtn = document.createElement("button");
-  revealBtn.className = "reveal-btn";
-  revealBtn.textContent = "Reveal";
-  revealBtn.onclick = () => revealWord(w, clueSpan, revealBtn);
+    const revealBtn = document.createElement("button");
+    revealBtn.className = "reveal-btn";
+    revealBtn.textContent = "Reveal";
+    revealBtn.onclick = () => revealWord(w, clueSpan, revealBtn);
 
-  li.appendChild(clueSpan);
-  li.appendChild(revealBtn);
-  li.id = w;
-  wordList.appendChild(li);
-});
+    li.appendChild(clueSpan);
+    li.appendChild(revealBtn);
+    li.id = w;
+    wordList.appendChild(li);
+  });
+}
 
 /* ================= SELECTION (STABLE) ================= */
 
