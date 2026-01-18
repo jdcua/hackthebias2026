@@ -249,7 +249,7 @@
   </div>
 
   <div class="words-container"> <!-- The words to find, displayed on the right -->
-    <h3>Find these words:</h3>
+    <h3>Clues</h3>
     <div class="word-list-scroll"> <!-- Scrollable word list -->
       <ul id="wordList"></ul>
     </div>
@@ -260,6 +260,7 @@
 <div id="victoryModal" class="modal"> <!-- Modal overlay -->
   <div class="modal-content"> <!-- Modal content -->
     <h2>🎉 Congratulations! 🎉</h2>
+    <p> The company was: <strong id="companyName"></strong></p>    
     <p id="victoryTime">Time: 00:00</p> <!-- Victory time display -->
     <button onclick="location.reload()">Play Again</button> <!-- Reload button -->
   </div>
@@ -269,7 +270,8 @@
 /* ================= SETTINGS ================= */
 
 const size = 8;
-const words = ["HTML", "JAVA", "CSS", "CODE", "WEB","SCRIPT","DATA"];
+const words = ["HTML", "JAVA"]; // set your words here
+const companyName = "ACME Corp"; // set your company name here
 const directions = [
   [0, 1], // Horizontal
   [1, 0], // Vertical
@@ -492,12 +494,16 @@ function checkWord() { // Check if a word was found
 }
 
 function showVictoryModal() { // Display victory modal
-  const modal = document.getElementById("victoryModal"); // Get modal element
-  const victoryTime = document.getElementById("victoryTime"); // Get time display
-  const m = String(Math.floor(seconds / 60)).padStart(2, "0"); // Format minutes
-  const s = String(seconds % 60).padStart(2, "0"); // Format seconds
-  victoryTime.textContent = `Time: ${m}:${s}`; // Set time text
-  modal.style.display = "block"; // Show modal
+  const modal = document.getElementById("victoryModal");
+  const victoryTime = document.getElementById("victoryTime");
+  const companyEl = document.getElementById("companyName");
+
+  const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+  const s = String(seconds % 60).padStart(2, "0");
+  victoryTime.textContent = `Time: ${m}:${s}`;
+  companyEl.textContent = companyName;
+
+  modal.style.display = "block";
 }
 </script> <!-- End JavaScript -->
 
