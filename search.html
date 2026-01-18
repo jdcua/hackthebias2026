@@ -2,123 +2,319 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Word Search Game</title>
+<title>SUSearch - Word Search Game</title>
 
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-<style> /* This part is CSS coding */
-        /* May as well consider this the front-end set up*/
-
-  body { /* Styling for the page */
+  body {
     font-family: Arial, sans-serif;
-    background: #f4f4f4;
+    background: linear-gradient(135deg, #1e3c1e 0%, #2d5a2d 100%);
+    min-height: 100vh;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
     padding: 20px;
   }
 
-  .game { /* Game container */ 
+  h1 {
+    font-size: 56px;
+    color: #90ee90;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+  }
+
+  /* Two-column layout: grid left, clues right */
+  .game {
     display: flex;
     gap: 30px;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 980px;
+    justify-content: center;
   }
 
-  table { /* Styles the whole grid */
+  .left-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .start-button {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    font-size: 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    font-weight: bold;
+  }
+
+  .start-button:hover { background: #45a049; transform: translateY(-2px); }
+
+  .start-button:disabled { background: #666; cursor: not-allowed; transform: none; }
+
+  .how-button {
+    background: #1976d2;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 3px 5px rgba(0,0,0,0.15);
+    transition: all 0.2s ease;
+    font-weight: bold;
+  }
+
+  .how-button:hover { background: #1565c0; transform: translateY(-1px); }
+
+  .timer {
+    font-size: 24px;
+    font-weight: bold;
+    color: #90ee90;
+    background: rgba(0,0,0,0.3);
+    padding: 8px 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  table {
     border-collapse: collapse;
     user-select: none;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
   }
 
-  td { /* Styles each letter cell within the grid */
-    width: 26px;
-    height: 26px;
-    border: 1px solid #333;
+  td {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #4CAF50;
     text-align: center;
     font-size: 20px;
     cursor: pointer;
     background: white;
-  }
-
-  td.selected { background: #add8e6; } /* Style for selected letters (greyish) */
-  td.found { background: #90ee90; } /* Style for found words (green) */
-
-  .timer { /* Timer display */
-    font-size: 22px;
+    transition: background 0.2s ease;
     font-weight: bold;
-    margin-bottom: 10px;
+    color: #2d5a2d;
   }
 
-  .found-word { /* Strikes through a found word */
-    text-decoration: line-through;
-    color: green;
+  td:hover { background: #f0f0f0; }
+  td.selected { background: #81c784; color: white; }
+  td.found { background: #4CAF50; color: white; }
+
+  .words-container {
+    background: rgba(255,255,255,0.95);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+    width: 300px;
+    min-width: 260px;
+    max-height: 520px;
+    overflow: auto;
   }
-</style> <!-- Ends CSS Styling -->
+
+  .words-container h3 {
+    color: #2d5a2d;
+    margin-bottom: 15px;
+    font-size: 20px;
+  }
+
+  .word-list-scroll { max-height: 420px; overflow-y: auto; padding-right: 10px; }
+  .word-list-scroll::-webkit-scrollbar { width: 8px; }
+  .word-list-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+  .word-list-scroll::-webkit-scrollbar-thumb { background: #4CAF50; border-radius: 4px; }
+  .word-list-scroll::-webkit-scrollbar-thumb:hover { background: #45a049; }
+
+  #wordList { list-style: none; }
+
+  #wordList li {
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: #e8f5e9;
+    border-radius: 4px;
+    color: #2d5a2d;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    min-height: 45px;
+  }
+
+  .clue-text { flex: 1; line-height: 1.4; font-size: 14px; }
+  .word-revealed { color: #4CAF50; font-style: italic; }
+
+  .reveal-btn {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+  }
+  .reveal-btn:hover { background: #45a049; transform: scale(1.05); }
+  .reveal-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+
+  .found-word { text-decoration: line-through; background: #4CAF50 !important; color: white !important; }
+
+  /* Modal (shared) */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal-content {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    margin: 12% auto;
+    padding: 30px;
+    border-radius: 16px;
+    width: 420px;
+    text-align: center;
+    box-shadow: 0 16px 32px rgba(0,0,0,0.5);
+    animation: slideIn 0.4s ease;
+    color: white;
+  }
+  @keyframes slideIn { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .modal-content h2 { font-size: 36px; margin-bottom: 14px; }
+  .modal-content p { font-size: 20px; margin-bottom: 18px; }
+  .modal-content button { background: white; color: #4CAF50; border: none; padding: 10px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s ease; }
+  .modal-content button:hover { transform: scale(1.03); }
+</style>
 </head>
 
-<body> <!-- Now it's time to start making the visible content-->
+<body>
 
-<div class="game"> <!-- Main game container, the grid -->
-  <div>
-    <div class="timer" id="timer">Time: 00:00</div> <!-- Timer text -->
-    <table id="grid"></table> <!-- Empty table for the grid, will be filled later -->
+<h1>SUSearch</h1>
+
+<div class="game">
+  <div class="left-panel">
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="start-button" id="startBtn">Start Game</button>
+      <button class="how-button" id="howBtn">How to Play</button>
+    </div>
+    <div class="timer" id="timer">Time: 00:00</div>
+    <table id="grid"></table>
   </div>
 
-  <div class="words"> <!-- The words to find, displayed on the right -->
-    <h3>Find these words:</h3>
-    <ul id="wordList"></ul>
+  <div class="words-container" id="wordsContainer" style="display:none;">
+    <h3>Clues:</h3>
+    <div class="word-list-scroll">
+      <ul id="wordList"></ul>
+    </div>
   </div>
 </div>
 
-<script> // Time to start JavaScript
+<!-- Victory Modal -->
+<div id="victoryModal" class="modal">
+  <div class="modal-content">
+    <h2>🎉 Congratulations! 🎉</h2>
+    <p>The company was: <strong id="companyName"></strong></p>
+    <p id="victoryTime">You took 00:00</p>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <button id="playAgainBtn" onclick="location.reload()">Play Again</button>
+    </div>
+  </div>
+</div>
+
+<!-- How To Play Modal -->
+<div id="howModal" class="modal">
+  <div class="modal-content">
+    <h2>How to Play</h2>
+    <p>Find the words listed in the clues. Click and drag across letters in a straight line to select a word. Use the "Reveal" buttons on clues if you need help.</p>
+    <p>Find all words to reveal the company.</p>
+    <div style="display:flex;gap:12px;justify-content:center;margin-top:10px;">
+      <button id="closeHowBtn">Got it</button>
+    </div>
+  </div>
+</div>
+
+<script>
 /* ================= SETTINGS ================= */
 
 const size = 8;
-const words = ["HTML", "JAVA", "CSS", "CODE", "WEB"];
+const companyName = "Super Ultra Corp";
+const words = ["HTML", "JAVA", "CSS", "CODE"];
+const clues = [
+  "Markup language for creating web pages",
+  "Popular programming language used for web development",
+  "Style sheet language used for describing the presentation of a document",
+  "What programmers do to create software"
+];
 const directions = [
-  [0, 1], // Horizontal
-  [1, 0], // Vertical
-  [1, 1], // y = -x
-  [-1, 1] // y = x
+  [0, 1], [1, 0], [1, 1], [-1, 1]
 ];
 
-let foundCount = 0; // How many words have been found
+let foundCount = 0;
+let revealedCount = 0;
+let gameStarted = false;
 
 /* ================= TIMER ================= */
 
-let seconds = 0; 
-const timerInterval = setInterval(() => { //Runs every second
-  seconds++;
-  const m = String(Math.floor(seconds / 60)).padStart(2, "0");
-  const s = String(seconds % 60).padStart(2, "0");
-  timer.textContent = `Time: ${m}:${s}`;
-}, 1000); //Update display
+let seconds = 0;
+let timerInterval = null;
+
+const startBtn = document.getElementById("startBtn");
+const timer = document.getElementById("timer");
+const howBtn = document.getElementById("howBtn");
+
+startBtn.addEventListener("click", () => {
+  if (!gameStarted) {
+    gameStarted = true;
+    startBtn.disabled = true;
+    startBtn.textContent = "Game Started!";
+    // show clues and render them only after start
+    document.getElementById("wordsContainer").style.display = "block";
+    renderWordList();
+
+    timerInterval = setInterval(() => {
+      seconds++;
+      const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+      const s = String(seconds % 60).padStart(2, "0");
+      timer.textContent = `Time: ${m}:${s}`;
+    }, 1000);
+  }
+});
 
 /* ================= GRID ================= */
 
-  //Creates the grid rows and columns, then fill with nothing for now
 const grid = Array(size).fill().map(() => Array(size).fill(""));
 
-function placeWord(word) { //Places the word
+function placeWord(word) {
   let placed = false;
-  while (!placed) { //Keep trying to place the word
-
-    //start by setting a random direction, x coord, y coord
+  while (!placed) {
     const [dr, dc] = directions[Math.floor(Math.random() * directions.length)];
     const r0 = Math.floor(Math.random() * size);
     const c0 = Math.floor(Math.random() * size);
 
-    let ok = true; // Assume it fits for now
-
-    for (let i = 0; i < word.length; i++) { // Check each letter of the word
+    let ok = true;
+    for (let i = 0; i < word.length; i++) {
       const r = r0 + dr * i;
       const c = c0 + dc * i;
-      if ( //If out of bounds or there's conflicting letters,
-        r < 0 || c < 0 || r >= size || c >= size ||
-        (grid[r][c] && grid[r][c] !== word[i])
-      ) {
-        ok = false; //Then it doesn't fit
-        break;
+      if (r < 0 || c < 0 || r >= size || c >= size || (grid[r][c] && grid[r][c] !== word[i])) {
+        ok = false; break;
       }
     }
 
-    if (ok) { //If it fits, place th letters and mark as placed
+    if (ok) {
       for (let i = 0; i < word.length; i++) {
         grid[r0 + dr * i][c0 + dc * i] = word[i];
       }
@@ -127,122 +323,114 @@ function placeWord(word) { //Places the word
   }
 }
 
-words.forEach(placeWord); //Place all the words
+words.forEach(placeWord);
 
 for (let r = 0; r < size; r++) {
   for (let c = 0; c < size; c++) {
-    if (!grid[r][c]) { //If a cell is empty, place a random letter
-      grid[r][c] = String.fromCharCode(65 + Math.random() * 26);
-    }
+    if (!grid[r][c]) grid[r][c] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
   }
 }
 
 /* ================= RENDER ================= */
 
-const table = document.getElementById("grid"); // Get table element
+const table = document.getElementById("grid");
 
-grid.forEach((row, r) => { // Run through each row
-  const tr = document.createElement("tr"); // Create a table row
-
-  row.forEach((ch, c) => { // Run through each column of some row
-    const td = document.createElement("td"); // Create a column row 
-
-    td.textContent = ch; // Put character inside
-    td.dataset.row = r; // Store row index
-    td.dataset.col = c; // Store column index 
-    td.draggable = false; // Disable native dragging
-    tr.appendChild(td); // Add cell to row
+grid.forEach((row, r) => {
+  const tr = document.createElement("tr");
+  row.forEach((ch, c) => {
+    const td = document.createElement("td");
+    td.textContent = ch;
+    td.dataset.row = r;
+    td.dataset.col = c;
+    td.draggable = false;
+    tr.appendChild(td);
   });
-  table.appendChild(tr); // Add row to table
+  table.appendChild(tr);
 });
 
-const wordList = document.getElementById("wordList"); // Get list
-words.forEach(w => {
-  const li = document.createElement("li"); // Create list item
-  li.textContent = w; // Set text
-  li.id = w; // Set TD
-  wordList.appendChild(li); //Add to list item
-});
+/* Render word/clue list only when requested */
+function renderWordList() {
+  const wordList = document.getElementById("wordList");
+  wordList.innerHTML = "";
+  words.forEach((w, index) => {
+    const li = document.createElement("li");
+    const clueSpan = document.createElement("span");
+    clueSpan.className = "clue-text";
+    clueSpan.textContent = clues[index];
+    clueSpan.dataset.word = w;
+
+    const revealBtn = document.createElement("button");
+    revealBtn.className = "reveal-btn";
+    revealBtn.textContent = "Reveal";
+    revealBtn.onclick = () => revealWord(w, clueSpan, revealBtn);
+
+    li.appendChild(clueSpan);
+    li.appendChild(revealBtn);
+    li.id = w;
+    wordList.appendChild(li);
+  });
+}
 
 /* ================= SELECTION (STABLE) ================= */
 
-let startCell = null; // Cell where drag started
-let direction = null; // Locked direction
-let selected = []; // Selected cells in drag
-let isDragging = false; // Drag state
+let startCell = null;
+let direction = null;
+let selected = [];
+let isDragging = false;
 
-document.addEventListener("dragstart", e => e.preventDefault()); // Prevent native drag behavior completely
+document.addEventListener("dragstart", e => e.preventDefault());
 
-
-table.addEventListener("mousedown", e => { //Check for mouse pressed
-  // Basically initialize the drag
-  if (e.target.tagName !== "TD") return; //Only allow cells to be pressed
-  e.preventDefault(); //Prevent browser drag
-
-  clearSelection(); //Clear previous selection
-  startCell = e.target; //Set start cell
-  selected = [startCell]; 
-  startCell.classList.add("selected"); 
-  isDragging = true; 
+table.addEventListener("mousedown", e => {
+  if (e.target.tagName !== "TD" || !gameStarted) return;
+  e.preventDefault();
+  clearSelection();
+  startCell = e.target;
+  selected = [startCell];
+  startCell.classList.add("selected");
+  isDragging = true;
 });
 
+document.addEventListener("mousemove", e => {
+  if (!isDragging) return;
+  e.preventDefault();
+  const cell = document.elementFromPoint(e.clientX, e.clientY);
+  if (!cell || cell.tagName !== "TD") return;
 
-document.addEventListener("mousemove", e => { // When the mouse moves
-  if (!isDragging) return; // Only if dragging
-  e.preventDefault(); // Only allow cells to be highlighted
+  const r0 = +startCell.dataset.row;
+  const c0 = +startCell.dataset.col;
+  const r1 = +cell.dataset.row;
+  const c1 = +cell.dataset.col;
 
-  const cell = document.elementFromPoint(e.clientX, e.clientY); //Cell under the mouse
-  if (!cell || cell.tagName !== "TD") return; // Ignore invalid targets
+  const dRow = r1 - r0;
+  const dCol = c1 - c0;
+  const absRow = Math.abs(dRow);
+  const absCol = Math.abs(dCol);
 
-  const r0 = +startCell.dataset.row; // Start row
-  const c0 = +startCell.dataset.col; // Start col
-  const r1 = +cell.dataset.row; // Current row
-  const c1 = +cell.dataset.col; // Current col
-
-  const dRow = r1 - r0; // Row distance
-  const dCol = c1 - c0; // Column distance
-
-  const absRow = Math.abs(dRow); // Absolute row distance
-  const absCol = Math.abs(dCol); // Absolute column distance 
-
-  if (!direction) { // If not locked yet, wait for movement
-    if (absRow + absCol < 2) return; 
-
-    if (Math.abs(absRow - absCol) <= 1) {  // Diagonal
-      direction = [Math.sign(dRow), Math.sign(dCol)];
-    } else if (absCol > absRow) { // Horizontal
-      direction = [0, Math.sign(dCol)];
-    } else { // Vertical
-      direction = [Math.sign(dRow), 0];
-    }
+  if (!direction) {
+    if (absRow + absCol < 2) return;
+    if (Math.abs(absRow - absCol) <= 1) direction = [Math.sign(dRow), Math.sign(dCol)];
+    else if (absCol > absRow) direction = [0, Math.sign(dCol)];
+    else direction = [Math.sign(dRow), 0];
   }
 
-  clearSelection(); // Clear previous highlights
+  clearSelection();
+  const [dr, dc] = direction;
+  let steps;
+  if (dr !== 0 && dc !== 0) steps = Math.min(absRow, absCol);
+  else steps = Math.max(absRow, absCol);
 
-  const [dr, dc] = direction; // Direction components
-
-  let steps; // Number of highlighted cells
-  if (dr !== 0 && dc !== 0) { // If diagonal
-    steps = Math.min(absRow, absCol); // Take the shortest axis
-  } else { // If horizontal or vertical
-    steps = Math.max(absRow, absCol); // Take the full distance
-  }
-
-  for (let i = 0; i <= steps; i++) { //Loop through each step
-    const r = r0 + dr * i; // Row
-    const c = c0 + dc * i; // Column
-    if (r < 0 || c < 0 || r >= size || c >= size) break; //Check grid bounds, break if out of bounds
-
-    const td = document.querySelector( // Get the HTML cell
-      `td[data-row='${r}'][data-col='${c}']` 
-    );
-    td.classList.add("selected"); // Hightlight cell
-    selected.push(td); // Save it for word checking later
+  for (let i = 0; i <= steps; i++) {
+    const r = r0 + dr * i;
+    const c = c0 + dc * i;
+    if (r < 0 || c < 0 || r >= size || c >= size) break;
+    const td = document.querySelector(`td[data-row='${r}'][data-col='${c}']`);
+    td.classList.add("selected");
+    selected.push(td);
   }
 });
 
-document.addEventListener("mouseup", () => { // Mouse released, check word and stop dragging
-  if (isDragging) { 
+document.addEventListener("mouseup", () => {
+  if (isDragging) {
     checkWord();
     isDragging = false;
     direction = null;
@@ -251,33 +439,67 @@ document.addEventListener("mouseup", () => { // Mouse released, check word and s
 
 /* ================= WORD CHECK ================= */
 
-function clearSelection() { // Clear selected letters
+function revealWord(word, clueSpan, button) {
+  if (!gameStarted) return;
+  clueSpan.innerHTML = `${clues[words.indexOf(word)]} → <span class="word-revealed">${word}</span>`;
+  button.disabled = true;
+  revealedCount++;
+}
+
+function clearSelection() {
   selected.forEach(c => c.classList.remove("selected"));
   selected = [];
 }
 
-function checkWord() { // Check if a word was found
-  const word = selected.map(c => c.textContent).join(""); // Build word
-  const rev = word.split("").reverse().join(""); // Reverse word
+function checkWord() {
+  const word = selected.map(c => c.textContent).join("");
+  const rev = word.split("").reverse().join("");
 
-  if (words.includes(word) || words.includes(rev)) { // If valid
-    selected.forEach(c => c.classList.add("found")); // Mark found
-
-    const el = document.getElementById(word) || document.getElementById(rev); // Word list item
-    if (el && !el.classList.contains("found-word")) { // If not already found
-      el.classList.add("found-word"); // Mark found
-      foundCount++; // Increase count of found words
-
-      if (foundCount === words.length) { // If all found
-        clearInterval(timerInterval); // Stop timer
-        alert("🎉 All words found!"); // Show win message
+  if (words.includes(word) || words.includes(rev)) {
+    selected.forEach(c => c.classList.add("found"));
+    const el = document.getElementById(word) || document.getElementById(rev);
+    if (el && !el.classList.contains("found-word")) {
+      el.classList.add("found-word");
+      foundCount++;
+      if (foundCount === words.length) {
+        clearInterval(timerInterval);
+        showVictoryModal();
       }
     }
-  } else { // If invalid word
-    clearSelection(); 
+  } else {
+    clearSelection();
   }
 }
-</script> <!-- End JavaScript -->
 
-</body> <!-- End body -->
-</html> <!-- End HTML -->
+/* ================= MODALS ================= */
+
+function showVictoryModal() {
+  const modal = document.getElementById("victoryModal");
+  const victoryTime = document.getElementById("victoryTime");
+  const companyEl = document.getElementById("companyName");
+  const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+  const s = String(seconds % 60).padStart(2, "0");
+  victoryTime.textContent = `You took ${m}:${s}`;
+  companyEl.textContent = companyName;
+  modal.style.display = "block";
+}
+
+howBtn.addEventListener("click", () => {
+  document.getElementById("howModal").style.display = "block";
+});
+
+document.getElementById("closeHowBtn").addEventListener("click", () => {
+  document.getElementById("howModal").style.display = "none";
+});
+
+/* Close modals when clicking outside content */
+window.addEventListener("click", (e) => {
+  const v = document.getElementById("victoryModal");
+  const h = document.getElementById("howModal");
+  if (e.target === v) v.style.display = "none";
+  if (e.target === h) h.style.display = "none";
+});
+</script>
+
+</body>
+</html>
