@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Suspicious Search (SUSearch) - Exposing Greenwashing Bias in Sustainability Reports</title>
+
+    <style>
+        /* CSS stuff, essentially just styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            /* Main page styling */
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c1e 0%, #2d5a2d 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            /* Game title styling */
+            font-size: 56px;
+            color: #90ee90;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+
+        /* Two-column layout: grid left, clues right */
+        .game {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 980px;
+            justify-content: center;
+        }
+
+        .left-panel {
+            /* Buttons, timer, score, grid */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .start-button {
+            /* Start game button*/
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        /* For hover and disabled states */
+        .start-button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .start-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* How to play button*/
+        .how-button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.15);
+            transition: all 0.2s ease;
+            font-weight: bold;
+        }
+
+        /* for hovering over how to play */
+        .how-button:hover {
+            background: #1565c0;
+            transform: translateY(-1px);
+        }
+
+        /* game timer display */
+        .timer {
+            font-size: 24px;
+            font-weight: bold;
+            color: #90ee90;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* score display */
+        .score {
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 8px 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* grid table*/
+        table {
+            border-collapse: collapse;
+            user-select: none;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        /*individual cells*/
+        td {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #4CAF50;
+            text-align: center;
+            font-size: 20px;
+            cursor: pointer;
+            background: white;
+            transition: background 0.2s ease;
+            font-weight: bold;
+            color: #2d5a2d;
+        }
+
+        /* cell interaction states */
+        td:hover {
+            background: #f0f0f0;
+        }
+
+        td.selected {
+            background: #81c784;
+            color: white;
+        }
+
+        td.found {
+            background: #4CAF50;
+            color: white;
+        }
+
+        /* container holding clues */
+        .words-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            width: 300px;
+            min-width: 260px;
+            max-height: 520px;
+            overflow: auto;
+        }
+
+        /* styles the heading for the clues container */
+        .words-container h3 {
+            color: #2d5a2d;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        /* functionality for the clues panel basically */
+        .word-list-scroll {
+            /* Scrollable area for when there are many words */
+            max-height: 420px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        /* Scrollbar styling for the clues list */
+        .word-list-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .word-list-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .word-list-scroll::-webkit-scrollbar-thumb {
+            background: #4CAF50;
+            border-radius: 4px;
+        }
+
+        .word-list-scroll::-webkit-scrollbar-thumb:hover {
+            background: #45a049;
+        }
+
+        /* Remove default bullet points from the word list */
+        #wordList {
+            list-style: none;
+            /* Clean list look */
+        }
+
+        /* styling the list items themselves (each clue) */
+        #wordList li {
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            background: #e8f5e9;
+            border-radius: 4px;
+            color: #2d5a2d;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            min-height: 45px;
+        }
+
+        /* styles the text of each clue, and styles a word that has been revealed with the button */
+        .clue-text {
+            flex: 1;
+            line-height: 1.4;
+            font-size: 14px;
+        }
+
+        .word-revealed {
+            color: #4CAF50;
+            font-style: italic;
+        }
+
+        /* styles the reveal button itself*/
+        .reveal-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        /* states of the reveal button */
+        .reveal-btn:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+
+        .reveal-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* crosses out a clue if the corresponding word has been found */
+        .found-word {
+            text-decoration: line-through;
+            background: #4CAF50 !important;
+            color: white !important;
+        }
+
+        /* Modal overlay (shared between victory and how-to-play modals) */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Fade in animation for modals */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* modal content card */
+        .modal-content {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            margin: 12% auto;
+            padding: 30px;
+            border-radius: 16px;
+            width: 420px;
+            text-align: center;
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.4s ease;
+            color: white;
+        }
+
+        /* Slide in animation for modal content */
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Modal heading styling */
+        .modal-content h2 {
+            font-size: 28px;
+            margin-bottom: 14px;
+        }
+
+        /* Modal paragraph styling */
+        .modal-content p {
+            font-size: 20px;
+            margin-bottom: 18px;
+        }
+
+        /* Modal button styling */
+        .modal-content button {
+            background: white;
+            color: #4CAF50;
+            border: none;
+            padding: 10px 24px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        .modal-content button:hover {
+            transform: scale(1.03);
+        }
+
+        /* Share toast popup that appears at bottom of screen */
+        .share-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 12px 22px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        /* Show state for the toast notification */
+        .share-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-10px);
+        }
+
+        /* Loading screen overlay that appears while game data is being fetched */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(30, 60, 30, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        /* Loading screen heading */
+        .loading h2 {
+            color: #90ee90;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        /* Loading spinner animation */
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(144, 238, 144, 0.3);
+            border-top-color: #90ee90;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Spin animation for the loading spinner */
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Loading screen shown while game is being generated from server -->
+    <div id="loadingScreen" class="loading">
+        <h2>Generating Game...</h2>
+        <div class="spinner"></div>
+    </div>
+
+    <h1>SUSearch</h1>
+
+    <div class="game">
+        <div class="left-panel">
+            <!-- Buttons row: Start Game and How to Play -->
+            <div style="display:flex;gap:10px;align-items:center;">
+                <button class="start-button" id="startBtn">Start Game</button>
+                <button class="how-button" id="howBtn">How to Play</button>
+            </div>
+            <!-- Stats row: Timer and Score -->
+            <div style="display:flex;gap:12px;align-items:center;margin-top:6px;">
+                <div class="timer" id="timer">Time: 00:00</div>
+                <div class="score" id="score">Score: 100</div>
+            </div>
+            <!-- Word search grid table -->
+            <table id="grid"></table>
+        </div>
+
+        <!-- Right panel: Clues container (hidden until game starts) -->
+        <div class="words-container" id="wordsContainer" style="display:none;">
+            <h3>Clues:</h3>
+            <div class="word-list-scroll">
+                <ul id="wordList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Victory Modal shown when all words are found -->
+    <div id="victoryModal" class="modal">
+        <div class="modal-content">
+            <h2>🎉 Congratulations! 🎉</h2>
+            <p>The company was: <strong id="companyName"></strong></p>
+            <p id="victoryTime">You took 00:00</p>
+            <p id="victoryScore">Score: 100</p>
+            <div style="display:flex;gap:12px;justify-content:center;">
+                <button id="shareBtn">Share Results</button>
+                <button id="playAgainBtn">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- How To Play Modal with instructions -->
+    <div id="howModal" class="modal">
+        <div class="modal-content">
+            <h2>How to Play</h2>
+            <p>Find the words listed in the clues. Click and drag across letters in a straight line to select a word.
+                Use the
+                "Reveal" buttons on clues if you need help.</p>
+            <p>Find all words to reveal the company.</p>
+            <div style="display:flex;gap:12px;justify-content:center;margin-top:10px;">
+                <button id="closeHowBtn">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ================= SETTINGS ================= */
+
+        // Grid size (8x8 grid)
+        const size = 8;
+
+        // Starting score (decreases when revealing words)
+        let score = 100;
+
+        // Directions words can be placed: horizontal, vertical, diagonal down-right, diagonal up-right
+        // Format: [row_change, col_change]
+        const directions = [
+            [0, 1],   // Horizontal Right
+            [1, 0],   // Vertical Down
+            [1, 1],   // Diagonal Down-Right
+            [-1, 1]   // Diagonal Up-Right
+        ];
+
+        // Game data loaded from server
+        let words = [];
+        let clues = [];
+        let companyName = "";
+        let grid = [];
+
+        // Game progress tracking
+        let foundCount = 0;
+        let revealedCount = 0;
+        let gameStarted = false;
+
+        /* ================= TIMER ================= */
+
+        let seconds = 0;
+        let timerInterval = null;
+
+        // Document object model references
+        const startBtn = document.getElementById("startBtn");
+        const timer = document.getElementById("timer");
+        const howBtn = document.getElementById("howBtn");
+        const scoreEl = document.getElementById("score");
+
+        // Updates the score display on screen
+        function updateScoreDisplay() {
+            scoreEl.textContent = `Score: ${score}`;
+        }
+
+        updateScoreDisplay();
+
+        /* ================= FETCH GAME DATA FROM SERVER ================= */
+
+        // Fetch game data on page load from Flask backend
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch('/new-game');
+                const data = await response.json();
+
+                // Handle errors from server
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+
+                // Load game data from server response
+                words = data.words;
+                clues = data.clues;
+                companyName = data.companyName;
+
+                // Initialize the game with fetched data
+                initializeGame();
+
+                // Hide loading screen once game is ready
+                document.getElementById('loadingScreen').style.display = 'none';
+            } catch (error) {
+                console.error('Error loading game:', error);
+                alert('Failed to load game. Please refresh the page.');
+            }
+        });
+
+        /* ================= GAME INITIALIZATION ================= */
+
+        // Initialize game board with words and random letters
+        function initializeGame() {
+            // Create empty grid
+            grid = Array(size).fill().map(() => Array(size).fill(""));
+
+            // Place all words in the grid
+            words.forEach(placeWord);
+
+            // Fill remaining empty cells with random letters A-Z
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    // Generate random char code between 65 (A) and 90 (Z)
+                    if (!grid[r][c]) grid[r][c] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+                }
+            }
+
+            // Render the grid on screen
+            renderGrid();
+        }
+
+        /* ================= WORD PLACEMENT ================= */
+
+        // Places a word randomly in the grid
+        function placeWord(word) {
+            let placed = false;
+            let attempts = 0;
+            const maxAttempts = 1000; // Prevent infinite loops
+
+            while (!placed && attempts < maxAttempts) {
+                attempts++;
+                // Pick random direction and starting position
+                const [dr, dc] = directions[Math.floor(Math.random() * directions.length)];
+                const r0 = Math.floor(Math.random() * size);
+                const c0 = Math.floor(Math.random() * size);
+
+                let ok = true; // Assume placement is valid
+                // Check if word fits in this position
+                for (let i = 0; i < word.length; i++) {
+                    const r = r0 + dr * i;
+                    const c = c0 + dc * i;
+                    // Check bounds (must be inside grid) and conflicts with existing letters
+                    if (r < 0 || c < 0 || r >= size || c >= size || (grid[r][c] && grid[r][c] !== word[i])) {
+                        ok = false;
+                        break;
+                    }
+                }
+
+                // If valid, place the word
+                if (ok) {
+                    for (let i = 0; i < word.length; i++) {
+                        grid[r0 + dr * i][c0 + dc * i] = word[i];
+                    }
+                    placed = true;
+                }
+            }
+
+            // Log warning if word couldn't be placed
+            if (!placed) {
+                console.warn(`Could not place word: ${word}`);
+            }
+        }
+
+        /* ================= RENDER GRID ================= */
+
+        // Renders the grid as an HTML table
+        function renderGrid() {
+            const table = document.getElementById("grid");
+            table.innerHTML = "";
+
+            grid.forEach((row, r) => {
+                const tr = document.createElement("tr");
+                row.forEach((ch, c) => {
+                    const td = document.createElement("td");
+                    td.textContent = ch;
+                    td.dataset.row = r; // Store row index
+                    td.dataset.col = c; // Store column index
+                    td.draggable = false; // Prevent default drag behavior
+                    tr.appendChild(td);
+                });
+                table.appendChild(tr);
+            });
+        }
+
+        /* ================= RENDER CLUES ================= */
+
+        // Renders the clue list with reveal buttons (only called after game starts)
+        function renderWordList() {
+            const wordList = document.getElementById("wordList");
+            wordList.innerHTML = "";
+
+            words.forEach((w, index) => {
+                const li = document.createElement("li");
+
+                // Create clue text span
+                const clueSpan = document.createElement("span");
+                clueSpan.className = "clue-text";
+                clueSpan.textContent = clues[index];
+                clueSpan.dataset.word = w;
+
+                // Create reveal button
+                const revealBtn = document.createElement("button");
+                revealBtn.className = "reveal-btn";
+                revealBtn.textContent = "Reveal";
+                revealBtn.onclick = () => revealWord(w, clueSpan, revealBtn);
+
+                li.appendChild(clueSpan);
+                li.appendChild(revealBtn);
+                li.id = w; // Set ID to word for easy lookup
+                wordList.appendChild(li);
+            });
+        }
+
+        /* ================= START GAME ================= */
+
+        // Starts the game when the start button is clicked
+        startBtn.addEventListener("click", () => {
+            if (!gameStarted) {
+                // Lock the button so it can't be clicked again
+                gameStarted = true;
+                startBtn.disabled = true;
+                startBtn.textContent = "Game Started!";
+
+                // Show clues panel and render clues
+                document.getElementById("wordsContainer").style.display = "block";
+                renderWordList();
+
+                // Reset score and update display
+                score = 100;
+                updateScoreDisplay();
+
+                // Start timer (updates every second)
+                timerInterval = setInterval(() => {
+                    seconds++;
+                    const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+                    const s = String(seconds % 60).padStart(2, "0");
+                    timer.textContent = `Time: ${m}:${s}`;
+                }, 1000);
+            }
+        });
+
+        /* ================= SELECTION (MOUSE DRAG) ================= */
+
+        // Variables for tracking mouse drag selection
+        let startCell = null;
+        let direction = null;
+        let selected = [];
+        let isDragging = false;
+
+        // Prevent default browser drag behavior
+        document.addEventListener("dragstart", e => e.preventDefault());
+
+        // Handle mousedown on grid cells (start of drag)
+        document.getElementById("grid").addEventListener("mousedown", e => {
+            // Only handle left clicks on table data cells when game is active
+            if (e.target.tagName !== "TD" || !gameStarted) return;
+            e.preventDefault();
+
+            // Start new selection
+            clearSelection();
+            startCell = e.target;
+            selected = [startCell];
+            startCell.classList.add("selected");
+            isDragging = true;
+        });
+
+        // Handle mousemove (dragging)
+        document.addEventListener("mousemove", e => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const cell = document.elementFromPoint(e.clientX, e.clientY);
+            if (!cell || cell.tagName !== "TD") return;
+
+            // Get start and current cell positions
+            const r0 = +startCell.dataset.row;
+            const c0 = +startCell.dataset.col;
+            const r1 = +cell.dataset.row;
+            const c1 = +cell.dataset.col;
+
+            const dRow = r1 - r0;
+            const dCol = c1 - c0;
+            const absRow = Math.abs(dRow);
+            const absCol = Math.abs(dCol);
+
+            // Determine direction on first meaningful movement
+            if (!direction) {
+                if (absRow + absCol < 2) return; // Too small to determine direction
+                // Diagonal if row and col changes are similar
+                if (Math.abs(absRow - absCol) <= 1) direction = [Math.sign(dRow), Math.sign(dCol)];
+                // Horizontal if col change is larger
+                else if (absCol > absRow) direction = [0, Math.sign(dCol)];
+                // Vertical if row change is larger
+                else direction = [Math.sign(dRow), 0];
+            }
+
+            // Select cells along the direction
+            clearSelection();
+            const [dr, dc] = direction;
+            let steps;
+            if (dr !== 0 && dc !== 0) steps = Math.min(absRow, absCol); // Diagonal
+            else steps = Math.max(absRow, absCol); // Straight
+
+            for (let i = 0; i <= steps; i++) {
+                const r = r0 + dr * i;
+                const c = c0 + dc * i;
+                if (r < 0 || c < 0 || r >= size || c >= size) break;
+                const td = document.querySelector(`td[data-row='${r}'][data-col='${c}']`);
+                td.classList.add("selected");
+                selected.push(td);
+            }
+        });
+
+        // Handle mouseup (end of drag - check if word is valid)
+        document.addEventListener("mouseup", () => {
+            if (isDragging) {
+                checkWord();
+                isDragging = false;
+                direction = null;
+            }
+        });
+
+        /* ================= WORD CHECKING ================= */
+
+        // Reveals a word when the reveal button is clicked (deducts 25 points)
+        function revealWord(word, clueSpan, button) {
+            if (!gameStarted) return;
+            clueSpan.innerHTML = `${clues[words.indexOf(word)]} → <span class="word-revealed">${word}</span>`;
+            button.disabled = true;
+            revealedCount++;
+
+            // Subtract 25 points per reveal, minimum 0
+            score = Math.max(0, score - 25);
+            updateScoreDisplay();
+        }
+
+        // Clears the current selection highlighting
+        function clearSelection() {
+            selected.forEach(c => c.classList.remove("selected"));
+            selected = [];
+        }
+
+        // Checks if the selected cells form a valid word
+        function checkWord() {
+            // Combine selected cells into a string
+            const word = selected.map(c => c.textContent).join("");
+            const rev = word.split("").reverse().join(""); // Check reverse too because user might select backwards
+
+            // Check if word or its reverse is in the word list
+            if (words.includes(word) || words.includes(rev)) {
+                // Mark cells as found
+                selected.forEach(c => c.classList.add("found"));
+
+                // Mark the clue as found
+                const el = document.getElementById(word) || document.getElementById(rev);
+                if (el && !el.classList.contains("found-word")) {
+                    el.classList.add("found-word");
+                    foundCount++;
+
+                    // Check if all words are found
+                    if (foundCount === words.length) {
+                        clearInterval(timerInterval); // Stop timer
+                        showVictoryModal(); // Show victory screen
+                    }
+                }
+            } else {
+                clearSelection(); // Not a valid word, clear selection
+            }
+        }
+
+        /* ================= UI TOAST NOTIFICATIONS ================= */
+
+        // Shows a temporary popup message at the bottom of the screen
+        function showToast(message) {
+            let toast = document.querySelector(".share-toast");
+
+            // Create toast element if it doesn't exist
+            if (!toast) {
+                toast = document.createElement("div");
+                toast.className = "share-toast";
+                document.body.appendChild(toast);
+            }
+
+            toast.textContent = message;
+            toast.classList.add("show");
+
+            // Hide toast after 2.5 seconds
+            clearTimeout(toast.hideTimer);
+            toast.hideTimer = setTimeout(() => {
+                toast.classList.remove("show");
+            }, 2500);
+        }
+
+        /* ================= MODALS ================= */
+
+        // Displays the victory modal with final time and score
+        function showVictoryModal() {
+            const modal = document.getElementById("victoryModal");
+            const victoryTime = document.getElementById("victoryTime");
+            const companyEl = document.getElementById("companyName");
+            const victoryScoreEl = document.getElementById("victoryScore");
+
+            // Format time as MM:SS
+            const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+            const s = String(seconds % 60).padStart(2, "0");
+
+            victoryTime.textContent = `You took ${m}:${s}`;
+            companyEl.textContent = companyName;
+            victoryScoreEl.textContent = `Score: ${score}`;
+            modal.style.display = "block";
+        }
+
+        // Opens the how to play modal when the button is clicked
+        howBtn.addEventListener("click", () => {
+            document.getElementById("howModal").style.display = "block";
+        });
+
+        // Closes the how to play modal when the got it button is clicked
+        document.getElementById("closeHowBtn").addEventListener("click", () => {
+            document.getElementById("howModal").style.display = "none";
+        });
+
+        // Play Again button reloads the page (triggers new game from server)
+        document.getElementById("playAgainBtn").addEventListener("click", () => {
+            location.reload();
+        });
+
+        // Close modals when clicking outside the modal content
+        window.addEventListener("click", (e) => {
+            const v = document.getElementById("victoryModal");
+            const h = document.getElementById("howModal");
+            if (e.target === v) v.style.display = "none";
+            if (e.target === h) h.style.display = "none";
+        });
+
+        /* ================= SHARE RESULTS ================= */
+
+        // Creates a PNG image of results and copies it to clipboard
+        document.getElementById("shareBtn").addEventListener("click", shareResults);
+
+        function shareResults() {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+
+            // Set canvas size (suitable for social sharing)
+            canvas.width = 600;
+            canvas.height = 350;
+
+            // Draw dark green background
+            ctx.fillStyle = "#1e3c1e";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw white card in the center
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(40, 40, 520, 270);
+
+            // Draw title centered at the top
+            ctx.fillStyle = "#2d5a2d";
+            ctx.font = "bold 36px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("SUSearch Results", canvas.width / 2, 95);
+
+            // Draw time and score details
+            ctx.font = "22px Arial";
+            ctx.fillText(`Time: ${timer.textContent.replace("Time: ", "")}`, canvas.width / 2, 150);
+            ctx.fillText(`Score: ${score}`, canvas.width / 2, 190);
+
+            // Draw footer message
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "#555";
+            ctx.fillText("Can you beat my score?", canvas.width / 2, 240);
+
+            // Convert canvas to blob and copy to clipboard
+            canvas.toBlob(async (blob) => {
+                try {
+                    await navigator.clipboard.write([
+                        new ClipboardItem({ "image/png": blob })
+                    ]);
+
+                    showToast("Results image copied! Paste it anywhere 📋");
+
+                } catch (err) {
+                    showToast("Sharing not supported on this browser");
+                    console.error(err);
+                }
+            });
+        }
+
+    </script>
+
+</body>
+
+</html>

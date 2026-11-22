@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Always run from the project directory
+cd "$(dirname "$0")"
+
+PORT="${PORT:-5001}"
+
+# 1. Python virtualenv
+if [ ! -d ".venv" ]; then
+  echo "==> Creating virtual environment..."
+  python3 -m venv .venv
+fi
+source .venv/bin/activate
+
+# 2. Dependencies (only installs if missing)
+if ! python -c "import flask" 2>/dev/null; then
+  echo "==> Installing dependencies..."
+  pip install --upgrade pip >/dev/null
+  pip install -r requirements.txt
+fi
+
+# 3. Free the port if something is already there
+if lsof -ti:"$PORT" >/dev/null 2>&1; then
+  echo "==> Port $PORT in use; stopping previous process..."
+  kill -9 $(lsof -ti:"$PORT") 2>/dev/null || true
+  sleep 1
+fi
+
+# 4. Launch backend
+echo "==> Starting backend on http://localhost:$PORT ..."
+PORT="$PORT" python main.py > /tmp/hackthebias-server.log 2>&1 &
+SERVER_PID=$!
+
+cleanup() {
+  echo ""
+  echo "==> Stopping server..."
+  kill "$SERVER_PID" 2>/dev/null || true
+  wait "$SERVER_PID" 2>/dev/null || true
+  echo "==> Stopped. Bye!"
+}
+trap cleanup EXIT INT TERM
+
+# Wait for server to be ready
+for i in $(seq 1 30); do
+  if curl -s "http://localhost:$PORT/" >/dev/null 2>&1; then
+    break
+  fi
+  sleep 1
+done
+
+# Open frontend
+echo "==> Opening frontend..."
+if command -v open >/dev/null 2>&1; then
+  open "http://localhost:$PORT/"
+elif command -v xdg-open >/dev/null 2>&1; then
+  xdg-open "http://localhost:$PORT/"
+fi
+
+echo "==> Running. Press Ctrl+C to stop."
+wait "$SERVER_PID"

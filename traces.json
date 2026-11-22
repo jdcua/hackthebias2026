@@ -1,0 +1,46 @@
+[
+  {
+    "companyName": "PwC",
+    "words": ["BIOD", "WATER", "MEDIUM", "CLIMATE", "EVAL"],
+    "clues": [
+      "A metric this report fails to disclose: _____ diversity",
+      "Vague term used without supporting data",
+      "Time horizon identified in strategic decision-making timelines",
+      "Climate-related risks and opportunities discussed in the report",
+      "Governance framework for oversight of sustainability matters"
+    ]
+  },
+  {
+    "companyName": "Nestle",
+    "words": ["VALUE", "PLAN", "FAIR", "SAFE", "CARE"],
+    "clues": [
+      "Vague term used without supporting data",
+      "Subjective claim without evidence",
+      "Metric missing from disclosure",
+      "Subjective claim without evidence",
+      "Bias word used without data"
+    ]
+  },
+  {
+    "companyName": "EY",
+    "words": ["SUSTAIN", "METRICS", "TRUST", "CARBON", "WATER"],
+    "clues": [
+      "Vague term used without supporting data",
+      "A metric this report fails to disclose: _____ emissions",
+      "Subjective claim without evidence",
+      "Emission figure reported without baseline",
+      "Resource consumption not quantified"
+    ]
+  },
+  {
+    "companyName": "Deloitte",
+    "words": ["TRAVEL", "VOLUME", "CARBON", "ENERGY", "WASTE"],
+    "clues": [
+      "Vague term used without supporting data for reduction goal",
+      "Subjective claim without evidence regarding brand value",
+      "Emission metric missing from disclosure",
+      "Energy use not quantified in report",
+      "Waste management metric omitted"
+    ]
+  }
+]
